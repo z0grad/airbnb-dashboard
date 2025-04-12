@@ -1,88 +1,74 @@
+from dash import html
 import dash_bootstrap_components as dbc
-from dash import html, dcc
-import pandas as pd
-import plotly.express as px
-import graphs
 
-df = pd.read_csv('cleaned_airbnb.csv')
+# 🔹 Google Fonts URL for Fancy Fonts
+GOOGLE_FONTS_URL = "https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;700&family=Playfair+Display:wght@400;700&family=Montserrat:wght@400;700&display=swap"
+
+# 🔹 Airbnb Theme Colors
+COLORS = {
+    "AIRBNB_RED": "#FF5A5F",  # Primary Red
+    "AIRBNB_TEAL": "#00A699",  # Teal Accent
+    "GOLD": "#FFD700",  # Bright Gold Highlight
+    "DARK_GOLD": "#DEB522",  # Muted Gold for Cards
+    "BLACK": "#000000",  # Black Background
+    "WHITE": "#FFFFFF",  # White Text for Contrast
+    "LIGHT_GRAY": "#F7F7F7",  # Soft Gray Background
+}
+
+# 🔹 Fancy Font Choices
+FONTS = {
+    "Modern": "Poppins, sans-serif",
+    "Luxury": "Playfair Display, serif",
+    "Tech": "Montserrat, sans-serif",
+    "Cursive": "cursive",
+}
 
 
-def card(img_src, title, number, bg_color="#d4a9a1", text_color="black"):
+# 🔹 Stats Card Component (Image Beside Value)
+def stats_card(title, value, image_path, bg_color=COLORS["AIRBNB_TEAL"]):
     return dbc.Card(
-        [
-            dbc.CardImg(
-                src=img_src, 
-                top=True, 
-                className="mx-auto d-block mt-3",  
-                style={'height': '60px', 'width': '60px', 'object-fit': 'contain'}
-            ),  
-
-            dbc.CardBody([
-                html.H4(title, className="card-title fw-bold", style={'color': text_color}),  
-
-                # Number formatting with comma separator
-                html.P(f"{number:,.0f}", className="card-text fw-bold", 
-                       style={'color': text_color, 'fontSize': '24px'})  
-            ])
-        ],
+        dbc.CardBody(
+            [
+                html.Img(src=image_path, style={"width": "50px", "height": "50px", "marginBottom": "10px"}),
+                html.H4(value, style={"fontSize": "28px", "fontStyle": FONTS['Cursive'] ,"fontWeight": "bold", "marginBottom": "5px"}),
+                html.P(title, style={"fontSize": "28px", "fontWeight": "bold", "margin": "0px"}),
+            ],
+            className="text-center",
+        ),
         style={
-            "width": "18rem", 
-            "textAlign": "center", 
-            "backgroundColor": bg_color, 
-            "borderRadius": "10px",  
-            "boxShadow": "0px 4px 10px rgba(0, 0, 0, 0.1)"
-        }
+            "backgroundColor": bg_color,
+            "padding": "20px",
+            "borderRadius": "15px",
+            "border": "none",
+            "display": "flex",
+            "alignItems": "center",
+            "justifyContent": "center",
+            "flexDirection": "column",
+            # "width": "80px",  # Reduce card width
+            # "height": "80px",  # Reduce card height
+        },
     )
 
+# 🔹 Tab Styles
+TAB_STYLE = {
+    "border": "none",
+    "color": COLORS["AIRBNB_TEAL"],  # Teal text for inactive tabs
+    "fontWeight": "bold",
+    "padding": "12px 20px",
+    "textAlign": "center",
+    "fontSize": "18px",
+}
 
-def overview():
-    return dbc.Container([
-            html.Br(),
+SELECTED_TAB_STYLE = {
+    "borderBottom": f"4px solid {COLORS['AIRBNB_RED']}",  # Bold red bottom border
+    "backgroundColor": COLORS["LIGHT_GRAY"],  # Light gray for selected tab
+    "color": COLORS["AIRBNB_RED"],  # Red text for selected tab
+    "fontWeight": "bold",
+    "padding": "12px 20px",
+    "textAlign": "center",
+    "fontSize": "18px",
+}
 
-            # Row for Cards (Small Gap)
-            dbc.Row([
-                dbc.Col(card('./assets/home.png', 'Total Listings', df.shape[0]), width=3, className="px-1"),
-                dbc.Col(card('./assets/hosts.png', 'Total Hosts', 37457), width=3, className="px-1"),
-                dbc.Col(card('./assets/location.png', 'Total Neighbourhoods', df.neighbourhood.nunique()), width=3, className="px-1"),
-            ], className='justify-content-center align-items-center text-center g-1'),  # Small gap
-
-            html.Br(),
-
-            # Row for Graphs (Even Layout)
-            dbc.Row([
-                dbc.Col(dcc.Graph(id='bar-neighbourhood', figure=graphs.top10_neighbourhoods()), width=4),
-                dbc.Col(dcc.Graph(id='pie-neighbourhood', figure=graphs.pie_neighbourhood), width=4),
-                dbc.Col(dcc.Graph(id='pie-room-type', figure=graphs.pie_room_type), width=4),
-            ], className="mb-4")
-        ])
-
-def price_analysis():
-    return dbc.Container([
-            html.Br(),
-
-            # First Row of Price Analysis Graphs
-            dbc.Row([
-                dbc.Col(dcc.Graph(id='bar-neighbourhood', figure=graphs.neighbourhood_group_bar), width=6),
-                dbc.Col(dcc.Graph(id='bar-room-type', figure=graphs.room_type_bar), width=6),
-            ], className="mb-4"),
-
-            # Second Row of Price Analysis Graphs
-            dbc.Row([
-                dbc.Col(dcc.Graph(id='bar-price', figure=graphs.top10_neighbourhoods_price()), width=6),
-                dbc.Col(dcc.Graph(id='bar-price-room-type', figure=graphs.pivot_table()), width=6),
-            ])
-        ])
-
-def geo_analysis():
-    return dbc.Container([
-            html.Br(),
-
-            # Map Section
-            dbc.Row(
-                dbc.Col(
-                    dcc.Graph(id='map', figure=graphs.map()),
-                    width=12,
-                    className="shadow-lg p-3 bg-white rounded"
-                )
-            )
-        ], style={'width': '100%', 'display': 'inline-block'})
+# 🔹 Tab Component
+def tab(label, tab_id):
+    return dbc.Tab(label=label, tab_id=tab_id, label_style=TAB_STYLE, active_label_style=SELECTED_TAB_STYLE)

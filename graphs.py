@@ -1,124 +1,170 @@
 import plotly.express as px
 import pandas as pd
+import dash_bootstrap_components as dbc
+from dash import dcc
 
-# Load dataset
-df = pd.read_csv('cleaned_airbnb.csv')
 
-def create_pie(column_name):
-    title = f"{column_name.replace('_', ' ').title()} Distribution"
+# 🔹 Common Styling for All Graphs
+DEFAULT_LAYOUT = {
+    "title_font": dict(size=18, family="Arial", color="black", weight="bold"),
+    "title_x": 0.5,  # Center Title
+    "margin": dict(l=20, r=20, t=50, b=20),
+    "showlegend": False,  # Hide Legend by Default
+    "paper_bgcolor": "white",
+    "plot_bgcolor": "white",
+    "autosize": True,
+}
 
-    fig = px.pie(
-        df, names=column_name, title=f"<b>{title}</b>", hole=0.3,
-        color_discrete_sequence=px.colors.qualitative.Set2
+DEFAULT_TRACES = {
+    "textinfo": "percent+label",
+    "textfont": {"size": 12, "color": "white"},    
+    "marker": dict(line=dict(color="#FFFFFF", width=2))
+}
+
+
+COLOR_CATEGORICAL = px.colors.qualitative.Set2
+COLOR_CONTINUOUS = px.colors.sequential.Redor
+
+# 🔹 Pie Chart: Neighbourhood Group Distribution
+def pie_neighbourhood_group(df):
+    fig = px.pie(df, names='neighbourhood_group', hole=0.2,  
+                 color_discrete_sequence=COLOR_CATEGORICAL)
+    fig.update_layout(title="Neighbourhood Group Distribution", **DEFAULT_LAYOUT)
+    fig.update_traces(**DEFAULT_TRACES)
+    return fig
+
+# 🔹 Pie Chart: Room Type Distribution
+def pie_room_type(df):
+    fig = px.pie(df, names='room_type', hole=0.2,  
+                 color_discrete_sequence=COLOR_CATEGORICAL)
+    fig.update_layout(title="Room Type Distribution", **DEFAULT_LAYOUT)
+    fig.update_traces(**DEFAULT_TRACES)
+    return fig
+
+# 🔹 Bar Chart: Top 10 Neighbourhoods by Listings
+def bar_top_neighbourhoods(df):
+    top_10 = df['neighbourhood'].value_counts().head(10)
+    fig = px.bar(top_10, x=top_10.index, y=top_10.values, 
+                 color_discrete_sequence=COLOR_CATEGORICAL)
+    fig.update_layout(title="Top 10 Neighbourhoods by Listings", **DEFAULT_LAYOUT,
+                      xaxis_title="Neighbourhood", yaxis_title="Number of Listings")
+    return fig
+
+# 🔹 Scatter Plot: Neighbourhood Group Distribution on Map
+def scatter_neighbourhood_map(df):
+    fig = px.scatter(df, x='longitude', y='latitude', color='neighbourhood_group',
+                     title='Neighbourhood Group Distribution on Map'
+                     , color_discrete_sequence=COLOR_CATEGORICAL)
+    fig.update_layout(**DEFAULT_LAYOUT)
+    fig.update_xaxes(showgrid=False, showticklabels=False)
+    fig.update_yaxes(showgrid=False, showticklabels=False)
+    return fig
+
+def scatter_neighbourhood_price(df):
+    fig = px.scatter(df, x='longitude', y='latitude', color='neighbourhood_group', size = 'price',
+                     title='Neighbourhood Group Distribution on Map'
+                     , color_discrete_sequence=COLOR_CATEGORICAL)
+    fig.update_layout(**DEFAULT_LAYOUT)
+    fig.update_xaxes(showgrid=False, showticklabels=False)
+    fig.update_yaxes(showgrid=False, showticklabels=False)
+    return fig
+
+# 🔹 Bar Chart: Average Price per Neighbourhood Group
+def bar_avg_price_neighbourhood_group(df):
+    avg_price = df.groupby('neighbourhood_group')['price'].median().sort_values(ascending=False)
+    fig = px.bar(avg_price, x=avg_price.index, y=avg_price.values,  text=avg_price.values,
+                 color_discrete_sequence=COLOR_CATEGORICAL)
+    fig.update_layout(
+        title="Average Price per Neighbourhood Group",
+        **DEFAULT_LAYOUT,
+        xaxis_title="",
+        yaxis_title="<b>Median Price</b>",  # Bold Y-axis title
     )
-
-    # Improve label visibility
     fig.update_traces(
-        textinfo='percent+label', 
-        insidetextorientation='radial'
-    )
-
-    # Center title and remove legend
-    fig.update_layout(
-        title={'x': 0.5, 'xanchor': 'center'}, 
-        showlegend=False, 
-        margin=dict(l=30, r=30, t=50, b=30)
-    )
-
-    return fig
-
-def create_bar_chart(column_name):
-    title = f"Average Price per {column_name.replace('_', ' ').title()}"
-
-    # Aggregate data
-    agg_price = df.groupby(column_name)['price'].median().sort_values(ascending=False)
-
-    # Create bar chart
-    fig = px.bar(
-        x=agg_price.index, y=agg_price.values,
-        title=f"<b>{title}</b>", 
-        labels={'x': column_name.replace('_', ' ').title(), 'y': 'Median Price ($)'},
-        text=agg_price.values,  # Show values on bars
-        color_discrete_sequence=px.colors.qualitative.Set2
-    )
-
-    # Format bars & layout
-    fig.update_traces(texttemplate='$%{text:.2s}', textposition='outside')
-    fig.update_layout(
-        title={'x': 0.5, 'xanchor': 'center'}, 
-        showlegend=False, 
-        margin=dict(l=40, r=40, t=50, b=40),
-        xaxis=dict(title='', tickangle=45)
-    )
-
-    return fig
-
-def top10_neighbourhoods():
-    top_10_neighbourhoods = df['neighbourhood'].value_counts().head(10)
-    fig = px.bar(
-        x=top_10_neighbourhoods.index, y=top_10_neighbourhoods.values,
-        title='<b>Top 10 Neighbourhoods</b>', template='presentation',
-        color_discrete_sequence=px.colors.qualitative.Set2
+        texttemplate='%{text}',  # Display values inside bars
+        textposition='inside',
+        textfont=dict(color="white", size=18, family="Arial", )  # Customize text appearance
     )
     
-    fig.update_layout(
-        title={'x': 0.5, 'xanchor': 'center'},
-        margin=dict(l=40, r=40, t=50, b=40)
-    )
+    fig.update_xaxes(tickfont=dict(family="Arial", size=14, color="black", weight="bold"), title='')
+    fig.update_yaxes(tickfont=dict(family="Arial", size=14, color="black"))
     return fig
 
-def top10_neighbourhoods_price():
-    top_10_neighbourhoods = df.groupby('neighbourhood')['price'].median().sort_values(ascending=False).head(10)
-    fig = px.bar(
-        x=top_10_neighbourhoods.index, y=top_10_neighbourhoods.values,
-        title='<b>Top 10 Neighbourhoods by Median Price</b>', template='presentation',
-        color_discrete_sequence=px.colors.qualitative.Set2
-    )
+
+# 🔹 Bar Chart: Average Price per Room Type
+def bar_avg_price_room_type(df):
+    avg_price = df.groupby('room_type')['price'].median().sort_values(ascending=False)
+    fig = px.bar(avg_price, x=avg_price.index, y=avg_price.values, text=avg_price.values,
+                 color_discrete_sequence=COLOR_CATEGORICAL)
     
     fig.update_layout(
-        title={'x': 0.5, 'xanchor': 'center'},
-        margin=dict(l=40, r=40, t=50, b=40)
+        title="Average Price per Room Type",
+        **DEFAULT_LAYOUT,
+        xaxis_title="Room Type",
+        yaxis_title="<b>Median Price</b>"  # Bold Y-axis title
     )
+    
+    fig.update_traces(
+        texttemplate='%{text}',  # Display values inside bars
+        textposition='inside',
+        textfont=dict(color="white", size=18, family="Arial", )  # Customize text appearance
+    )
+    
+    fig.update_xaxes(tickfont=dict(family="Arial", size=14, color="black", weight="bold"), title='')  # Bold X-axis labels
+    fig.update_yaxes(tickfont=dict(family="Arial", size=14, color="black"))  # Style Y-axis ticks
+
     return fig
 
-def pivot_table():
+
+
+# 🔹 Bar Chart: Average Price per Neighbourhood (Top 10)
+def bar_avg_price_neighbourhood(df):
+    avg_price = df.groupby('neighbourhood')['price'].median().sort_values(ascending=False).head(10)
+    fig = px.bar(avg_price, x=avg_price.index, y=avg_price.values, text=avg_price.index,
+                 color_discrete_sequence=COLOR_CATEGORICAL)
+    
+    fig.update_layout(
+        title="Average Price per Neighbourhood (Top 10)",
+        **DEFAULT_LAYOUT,
+        xaxis_title="",
+        yaxis_title="<b>Median Price</b>"  # Make Y-axis title bold
+    )
+    
+    fig.update_traces(
+        textposition='inside',
+        textangle=-90,  # Rotate text
+        textfont=dict(color="white", size=14, family="Arial"),  # Customize text color, size, font
+        insidetextanchor="middle"  # Ensure text is inside the bars
+    )
+    
+    fig.update_xaxes(showticklabels=False)  # Hide x-axis labels
+    fig.update_yaxes(tickfont=dict(family="Arial", size=14, color="black"))  # Style Y-axis ticks
+
+    return fig
+
+
+# 🔹 Treemap: Average Price by Neighbourhood Group & Room Type
+def treemap_avg_price(df):
+    df_avg = df.groupby(['neighbourhood_group', 'room_type'], as_index=False)['price'].mean()
+    fig = px.treemap(df_avg, path=['neighbourhood_group', 'room_type'], values='price',
+                      color='price', color_continuous_scale=COLOR_CATEGORICAL)
+    fig.update_layout(title="Average Price by Neighbourhood Group and Room Type", **DEFAULT_LAYOUT)
+    return fig
+
+# 🔹 Treemap: Number of Listings by Neighbourhood Group & Neighbourhood
+def treemap_listings_count(df):
+    df_count = df.groupby(['neighbourhood_group', 'neighbourhood'])['neighbourhood'].count().reset_index(name='count')
+    fig = px.treemap(df_count, path=['neighbourhood_group', 'neighbourhood'], values='count',
+                      color='count', color_continuous_scale=COLOR_CATEGORICAL)
+    fig.update_layout(title="Number of Listings by Neighbourhood Group and Neighbourhood", **DEFAULT_LAYOUT)
+    return fig
+
+def heatmap_median_price(df):
     data = pd.pivot_table(df, index='neighbourhood_group', columns='room_type', values='price', aggfunc='median').T
-
-    fig = px.imshow(
-        data, text_auto=True, color_continuous_scale="greens",
-        width=650, height=400
-    )
-
-    # Remove colorbar, update layout
-    fig.update_layout(
-        title={'text': "<b>Median Price by Neighbourhood & Room Type</b>", 'x': 0.5, 'xanchor': 'center'},
-        coloraxis_showscale=False, margin=dict(l=40, r=40, t=50, b=40)
-    )
-
-    # Format axes
-    fig.update_xaxes(title='', tickangle=45)
-    fig.update_yaxes(title='')
-
+    fig = px.imshow(data, text_auto=True, title='Median Price by Neighbourhood Group and Room Type',
+                    color_continuous_scale='greens', aspect='auto',
+                    )
+    fig.update_layout(**DEFAULT_LAYOUT,coloraxis_showscale=False)
+    fig.update_xaxes(tickfont=dict(family="Arial", size=14, color="black", weight="bold"),title='')
+    fig.update_yaxes(tickfont=dict(family="Arial", size=14, color="black", weight="bold"), title='')
     return fig
-
-def map():
-    fig = px.scatter(
-        df, x='longitude', y='latitude', color='neighbourhood_group', size='price',
-        width=800, height=600, opacity=0.6, color_discrete_sequence=px.colors.qualitative.Set2
-    )
-    
-    # Remove Grid and Axis Labels
-    fig.update_xaxes(showgrid=False, zeroline=False, showticklabels=False)
-    fig.update_yaxes(showgrid=False, zeroline=False, showticklabels=False)
-    fig.update_layout(
-        title={'text': "<b>Neighbourhood Group Distribution on Map</b>", 'x': 0.5, 'xanchor': 'center'},
-        margin=dict(l=40, r=40, t=50, b=40)
-    )
-    
-    return fig
-
-# Generate Figures
-pie_neighbourhood = create_pie('neighbourhood_group')
-pie_room_type = create_pie('room_type')
-neighbourhood_group_bar = create_bar_chart('neighbourhood_group')
-room_type_bar = create_bar_chart('room_type')
